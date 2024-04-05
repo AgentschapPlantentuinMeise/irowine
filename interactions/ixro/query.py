@@ -100,7 +100,7 @@ query_dict = {
 }
 
 def cube_query(email, country, speciesKeyList, query_template=query_original):
-    query = query_template(
+    query = query_template.format(
         email=email, countryCode=country,
         speciesKeyList=','.join(speciesKeyList)
     )
