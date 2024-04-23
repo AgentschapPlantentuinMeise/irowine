@@ -1,7 +1,9 @@
 import os
+import json
 import pandas as pd
 from pygbif import species, occurrences
 from ixro.query import cube_query, download_cube
+import warnings
 
 if __name__ == '__main__':
     vvkey = species.name_suggest(
@@ -23,12 +25,15 @@ if __name__ == '__main__':
             continue
         nameConfig = {f"speciesKey": speciesKey}
         for regionName in ['BE','FR','GB']:
-            speciesCounts[(species_name,regionName)] = occurrences.search(
+            try: speciesCounts[(species_name,regionName)] = occurrences.search(
                 country = regionName, limit=0, **nameConfig
            )['count']
-        speciesCounts[(species_name,'EU')] = occurrences.search(
+            except Exception as e: warnings.warn(str(e))
+        try: speciesCounts[(species_name,'EU')] = occurrences.search(
                 continent = 'Europe', limit=0, **nameConfig
         )['count']
+        except Exception as e: warnings.warn(str(e))
+        
     speciesCounts = pd.Series(speciesCounts)
     speciesCounts = speciesCounts[
         speciesCounts > 0
@@ -40,16 +45,18 @@ if __name__ == '__main__':
     )
     cubes = {}
     for countryCode in ['BE','FR','GB']:
-        cubes[countryCode] = cube_query(
+        try: cubes[countryCode] = cube_query(
             os.environ.get('GBIF_EMAIL'),
             country = countryCode,
             speciesKeyList = list(
                 speciesCounts.speciesKey.astype('str')
             )+[str(vvkey)]
         )
+        except Exception as e: warnings.warn(str(e))
     for countryCode in cubes:
-        download_cube(
+        try: download_cube(
             cubes[countryCode],
             prefix=f"/results/{countryCode}_"
         )
+        except Exception as e: warnings.warn(str(e))
     
